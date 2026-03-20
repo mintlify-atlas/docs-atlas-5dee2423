@@ -1,0 +1,96 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "CVA — Class Variance Authority",
+  "projectDescription": "A tiny TypeScript library for building type-safe, variant-driven CSS class name components.",
+  "theme": "willow",
+  "primaryColor": "#afafaf",
+  "lightColor": "#484848",
+  "darkColor": "#2b2b2b",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "getting-started/installation",
+              "getting-started/quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "getting-started/variants",
+              "getting-started/compound-variants",
+              "getting-started/default-variants",
+              "getting-started/composing-components",
+              "getting-started/typescript"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/tailwind-css",
+              "guides/defining-config",
+              "guides/extending-components"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
+              "examples/react",
+              "examples/astro",
+              "examples/vue",
+              "examples/svelte",
+              "examples/other"
+            ]
+          },
+          {
+            "group": "Help",
+            "pages": [
+              "faqs",
+              "migrating"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "API",
+            "pages": [
+              "api-reference/cva",
+              "api-reference/cx",
+              "api-reference/compose",
+              "api-reference/define-config",
+              "api-reference/types"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Type-safe variant definitions with full TypeScript inference",
+    "Compound variants for applying classes based on multiple variant combinations",
+    "Default variants to set fallback values",
+    "Framework-agnostic — works with React, Vue, Svelte, Astro, and more",
+    "Tiny bundle size (~1.6KB minzipped)",
+    "Built-in cx utility (alias of clsx) for class concatenation",
+    "compose API to merge multiple cva components",
+    "defineConfig hook for customizing class output (e.g. tailwind-merge integration)"
+  ],
+  "publicApiSurface": [
+    "cva(config) — creates a variant component function",
+    "cx(...inputs) — concatenates class names (clsx alias)",
+    "compose(...components) — merges multiple cva components",
+    "defineConfig(options) — creates a custom cva/cx/compose instance with hooks",
+    "VariantProps<Component> — utility type to extract variant prop types",
+    "ClassValue — union type for valid class name values",
+    "CX / CXOptions / CXReturn — cx function types",
+    "CVA / DefineConfig / Compose — interface types for library functions"
+  ]
+}
