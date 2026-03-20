@@ -7,9 +7,25 @@ CVA works seamlessly with React. Import `cva` to define your variants and `Varia
 
 ## Installation
 
-```bash
-npm install class-variance-authority
+<CodeGroup>
+
+```bash npm
+npm install cva
 ```
+
+```bash yarn
+yarn add cva
+```
+
+```bash pnpm
+pnpm add cva
+```
+
+```bash bun
+bun add cva
+```
+
+</CodeGroup>
 
 ## With Tailwind CSS
 
@@ -19,9 +35,10 @@ Define variants using Tailwind utility classes, then extend `VariantProps` to ge
 
 ```tsx button.tsx
 import React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva, type VariantProps } from "cva";
 
-const button = cva("button", {
+const button = cva({
+  base: "button",
   variants: {
     intent: {
       primary: ["bg-blue-500", "text-white", "border-transparent"],
@@ -156,11 +173,12 @@ CVA works equally well with CSS Modules — pass the imported class name referen
 
 ```tsx button.tsx
 import React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva, type VariantProps } from "cva";
 
 import styles from "./button.module.css";
 
-const button = cva(styles.base, {
+const button = cva({
+  base: styles.base,
   variants: {
     intent: {
       primary: styles.primary,

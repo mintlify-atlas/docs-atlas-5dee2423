@@ -7,9 +7,25 @@ CVA integrates with Svelte's component model. Define your CVA function in the `<
 
 ## Installation
 
-```bash
-npm install class-variance-authority
+<CodeGroup>
+
+```bash npm
+npm install cva
 ```
+
+```bash yarn
+yarn add cva
+```
+
+```bash pnpm
+pnpm add cva
+```
+
+```bash bun
+bun add cva
+```
+
+</CodeGroup>
 
 ## Button component
 
@@ -18,9 +34,10 @@ A complete Svelte button component using CVA with scoped CSS:
 ```svelte button.svelte
 <script lang="ts">
   import type { HTMLButtonAttributes } from "svelte/elements";
-  import { cva, type VariantProps } from "class-variance-authority";
+  import { cva, type VariantProps } from "cva";
 
-  const button = cva("button", {
+  const button = cva({
+    base: "button",
     variants: {
       intent: {
         primary: "primary",
@@ -40,7 +57,7 @@ A complete Svelte button component using CVA with scoped CSS:
     ],
   });
 
-  interface $$Props extends HTMLButtonAttributes, VariantProps<typeof button> {}
+  interface $$Props extends HTMLButtonAttributes, Omit<VariantProps<typeof button>, 'disabled'> {}
 
   /**
    * For Svelte components, we recommend setting your defaultVariants within
@@ -53,7 +70,7 @@ A complete Svelte button component using CVA with scoped CSS:
 
 <button
   {...$$props}
-  class={button({ intent, size, disabled, class: $$props.class })}
+  class={button({ intent, size, disabled: disabled ?? false, class: $$props.class })}
   {disabled}
 >
   <slot />
@@ -87,14 +104,14 @@ A complete Svelte button component using CVA with scoped CSS:
   }
 
   .small {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    font-size: 0.875rem /* 14px */;
+    line-height: 1.25rem /* 20px */;
     padding: 0.25rem 0.5rem;
   }
 
   .medium {
-    font-size: 1rem;
-    line-height: 1.5rem;
+    font-size: 1rem /* 16px */;
+    line-height: 1.5rem /* 24px */;
     padding: 0.5rem 1rem;
   }
 
@@ -110,7 +127,7 @@ A complete Svelte button component using CVA with scoped CSS:
 ```
 
 <Note>
-  In Svelte, set default variant values directly on the exported props rather than in `defaultVariants`. This follows Svelte's idiomatic prop pattern where exported props default to `undefined`.
+  In Svelte, set default variant values directly on the exported props rather than in `defaultVariants`. This follows Svelte's idiomatic prop pattern where exported props default to `undefined`. The `$$Props` interface uses `Omit<VariantProps<typeof button>, 'disabled'>` to avoid conflicting with Svelte's native `HTMLButtonAttributes` `disabled` type.
 </Note>
 
 ### Forwarding `class` from the consumer
@@ -120,7 +137,7 @@ To support consumers passing extra classes via `class="..."`, use `$$props.class
 ```svelte
 <button
   {...$$props}
-  class={button({ intent, size, disabled, class: $$props.class })}
+  class={button({ intent, size, disabled: disabled ?? false, class: $$props.class })}
   {disabled}
 >
   <slot />

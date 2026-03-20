@@ -7,9 +7,25 @@ CVA works with Vue's `<script setup>` syntax and the `:class` binding. Define yo
 
 ## Installation
 
-```bash
-npm install class-variance-authority
+<CodeGroup>
+
+```bash npm
+npm install cva
 ```
+
+```bash yarn
+yarn add cva
+```
+
+```bash pnpm
+pnpm add cva
+```
+
+```bash bun
+bun add cva
+```
+
+</CodeGroup>
 
 ## The `:class` binding
 
@@ -27,9 +43,10 @@ A complete Vue button component using CVA with scoped CSS:
 
 ```vue Button.vue
 <script setup lang="ts">
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva, type VariantProps } from "cva";
 
-const button = cva("button", {
+const button = cva({
+  base: "button",
   variants: {
     intent: {
       primary: "primary",
@@ -111,14 +128,14 @@ withDefaults(
 }
 
 .small {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: 0.875rem /* 14px */;
+  line-height: 1.25rem /* 20px */;
   padding: 0.25rem 0.5rem;
 }
 
 .medium {
-  font-size: 1rem;
-  line-height: 1.5rem;
+  font-size: 1rem /* 16px */;
+  line-height: 1.5rem /* 24px */;
   padding: 0.5rem 1rem;
 }
 
