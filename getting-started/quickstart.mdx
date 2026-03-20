@@ -1,0 +1,189 @@
+---
+title: "Quickstart"
+description: "Build your first type-safe variant component with CVA in four steps."
+---
+
+# Quickstart
+
+<Steps>
+  <Step title="Install CVA">
+    <CodeGroup>
+
+    ```bash npm
+    npm i class-variance-authority
+    ```
+
+    ```bash yarn
+    yarn add class-variance-authority
+    ```
+
+    ```bash pnpm
+    pnpm i class-variance-authority
+    ```
+
+    ```bash bun
+    bun add class-variance-authority
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Create your first variant component">
+    Define a `button` component with `cva`. Pass base classes as the first argument, then describe your `variants`, `compoundVariants`, and `defaultVariants` in the config object.
+
+    ```ts components/button.ts
+    import { cva } from "class-variance-authority";
+
+    const button = cva(["font-semibold", "border", "rounded"], {
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          small: ["text-sm", "py-1", "px-2"],
+          medium: ["text-base", "py-2", "px-4"],
+        },
+        disabled: {
+          false: null,
+          true: ["opacity-50", "cursor-not-allowed"],
+        },
+      },
+      compoundVariants: [
+        {
+          intent: "primary",
+          disabled: false,
+          class: "hover:bg-blue-600",
+        },
+        {
+          intent: "secondary",
+          disabled: false,
+          class: "hover:bg-gray-100",
+        },
+        {
+          intent: "primary",
+          size: "medium",
+          class: "uppercase",
+        },
+      ],
+      defaultVariants: {
+        intent: "primary",
+        size: "medium",
+        disabled: false,
+      },
+    });
+    ```
+
+    Calling the component resolves the correct class string:
+
+    ```ts
+    button();
+    // => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 hover:bg-blue-600 uppercase"
+
+    button({ disabled: true });
+    // => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 opacity-50 cursor-not-allowed uppercase"
+
+    button({ intent: "secondary", size: "small" });
+    // => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2 hover:bg-gray-100"
+    ```
+
+    <Note>
+      Use of Tailwind CSS is optional. CVA works with any class-based styling approach, including plain CSS class names and CSS Modules.
+    </Note>
+  </Step>
+
+  <Step title="Use it in your framework">
+    `cva` returns a plain string, so it works anywhere you can set a class attribute.
+
+    <Tabs>
+      <Tab title="React">
+        ```tsx components/Button.tsx
+        import { button } from "./button";
+
+        interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+          intent?: "primary" | "secondary";
+          size?: "small" | "medium";
+        }
+
+        export function Button({ intent, size, className, ...props }: ButtonProps) {
+          return (
+            <button
+              className={button({ intent, size, className })}
+              {...props}
+            />
+          );
+        }
+        ```
+      </Tab>
+      <Tab title="Plain HTML">
+        ```html index.html
+        <!-- Resolve the class string server-side or in a build step -->
+        <button class="font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 hover:bg-blue-600 uppercase">
+          Click me
+        </button>
+        ```
+
+        ```ts server.ts
+        import { button } from "./components/button";
+
+        const primaryMedium = button({ intent: "primary", size: "medium" });
+        // => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 hover:bg-blue-600 uppercase"
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Extract variant types with VariantProps">
+    Use the `VariantProps` utility type to derive the TypeScript prop types directly from your `cva` definition. This keeps your types and your variant config in sync automatically.
+
+    ```ts components/button.ts
+    import { cva, type VariantProps } from "class-variance-authority";
+
+    const button = cva(["font-semibold", "border", "rounded"], {
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          small: ["text-sm", "py-1", "px-2"],
+          medium: ["text-base", "py-2", "px-4"],
+        },
+      },
+      defaultVariants: {
+        intent: "primary",
+        size: "medium",
+      },
+    });
+
+    // Extract the variant prop types
+    export type ButtonVariants = VariantProps<typeof button>;
+    // => { intent?: "primary" | "secondary"; size?: "small" | "medium" }
+    ```
+
+    You can then use `ButtonVariants` in your component props interface:
+
+    ```tsx components/Button.tsx
+    import { button, type ButtonVariants } from "./button";
+
+    interface ButtonProps
+      extends ButtonVariants,
+        React.ButtonHTMLAttributes<HTMLButtonElement> {}
+
+    export function Button({ intent, size, ...props }: ButtonProps) {
+      return <button className={button({ intent, size })} {...props} />;
+    }
+    ```
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Core concepts: Variants" icon="layer-group" href="/getting-started/variants">
+    Learn about variants, compound variants, boolean variants, and default variants in depth.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Full reference for `cva`, `cx`, `compose`, `defineConfig`, and `VariantProps`.
+  </Card>
+</CardGroup>

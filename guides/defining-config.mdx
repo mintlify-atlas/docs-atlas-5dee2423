@@ -1,0 +1,136 @@
+---
+title: "Defining Config"
+description: "Use defineConfig to create a custom cva, cx, and compose instance with shared hooks and global class transformations."
+---
+
+# Defining config
+
+`defineConfig` creates a custom set of `cva`, `cx`, and `compose` functions that share the same configuration. This lets you apply global transformations — such as merging conflicting Tailwind classes or adding a class prefix — without modifying every component individually.
+
+## The `DefineConfigOptions` interface
+
+`defineConfig` accepts an optional options object with a `hooks` property:
+
+```typescript
+import { defineConfig, type DefineConfigOptions } from "cva";
+
+// DefineConfigOptions (from source):
+// {
+//   hooks?: {
+//     onComplete?: (className: string) => string;
+//     "cx:done"?: (className: string) => string; // deprecated
+//   }
+// }
+```
+
+### `hooks.onComplete`
+
+Called with the final concatenated class string after all variants, compound variants, and extra `class`/`className` props have been resolved. Whatever string you return replaces the output.
+
+```typescript
+defineConfig({
+  hooks: {
+    onComplete: (className) => className.trim(),
+  },
+});
+```
+
+### `hooks["cx:done"]`
+
+<Warning>
+  `cx:done` is deprecated. Use `onComplete` instead. Both hooks perform the same function, but `cx:done` may be removed in a future release.
+</Warning>
+
+```typescript
+// Deprecated — migrate to onComplete
+defineConfig({
+  hooks: {
+    "cx:done": (className) => className.trim(),
+  },
+});
+```
+
+## Use case: integrating `tailwind-merge` globally
+
+The most common use of `defineConfig` is wiring in `tailwind-merge` so that class conflicts are resolved everywhere, automatically:
+
+```typescript lib/utils.ts
+import { defineConfig } from "cva";
+import { twMerge } from "tailwind-merge";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => twMerge(className),
+  },
+});
+```
+
+Because `onComplete` receives the fully-assembled class string, `twMerge` runs once per call regardless of how many variants or compound variants contributed to the output.
+
+## Use case: adding a class name prefix
+
+If your design system requires a vendor prefix on all generated classes, you can apply it in `onComplete`:
+
+```typescript lib/utils.ts
+import { defineConfig } from "cva";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) =>
+      className
+        .split(" ")
+        .map((cls) => (cls ? `ds-${cls}` : cls))
+        .join(" "),
+  },
+});
+```
+
+<Note>
+  This example is illustrative. Real-world prefix requirements vary; adjust the transformation to match your system's class naming scheme.
+</Note>
+
+## Re-exporting the configured instance
+
+The recommended pattern is to create the configured instance once and re-export it so all components in your application use the same `cva`, `cx`, and `compose`:
+
+<Steps>
+  <Step title="Create a utils module">
+    ```typescript lib/utils.ts
+    import { defineConfig } from "cva";
+    import { twMerge } from "tailwind-merge";
+
+    export const { cva, cx, compose } = defineConfig({
+      hooks: {
+        onComplete: (className) => twMerge(className),
+      },
+    });
+    ```
+  </Step>
+  <Step title="Import from your utils module in components">
+    ```typescript components/button.ts
+    import { cva, type VariantProps } from "../lib/utils";
+
+    export const button = cva({
+      base: ["font-semibold", "border", "rounded"],
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          small: ["text-sm", "py-1", "px-2"],
+          medium: ["text-base", "py-2", "px-4"],
+        },
+      },
+      defaultVariants: {
+        intent: "primary",
+        size: "medium",
+      },
+    });
+
+    export type ButtonProps = VariantProps<typeof button>;
+    ```
+  </Step>
+</Steps>
+
+Components that import from `lib/utils` automatically benefit from the configured hooks. You do not need to change any component-level code when the global configuration changes.

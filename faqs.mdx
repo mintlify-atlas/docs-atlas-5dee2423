@@ -1,0 +1,156 @@
+---
+title: "FAQs"
+description: "Answers to common questions about CVA."
+---
+
+# FAQs
+
+<AccordionGroup>
+  <Accordion title="Why don't you provide a `styled` API?">
+    Long story short: it's unnecessary.
+
+    `cva` encourages you to think of components as traditional CSS classes:
+
+    - Less JavaScript is better
+    - They're framework agnostic; truly reusable
+    - Polymorphism is free — just apply the class to your preferred HTML element
+    - Less opinionated; you're free to build components with `cva` however you'd like
+
+    See the [Composing components](/getting-started/composing-components) documentation for further recommendations.
+  </Accordion>
+
+  <Accordion title="How can I create responsive variants like Stitches.js?">
+    You can't.
+
+    `cva` doesn't know about how you choose to apply CSS classes, and it doesn't want to.
+
+    Two approaches work well in practice:
+
+    **Show and hide elements at different breakpoints**
+
+    ```tsx
+    export const Example = () => (
+      <>
+        <div className="hidden sm:inline-flex">
+          <button className={button({ intent: "primary" })}>Hidden until sm</button>
+        </div>
+        <div className="inline-flex sm:hidden">
+          <button className={button({ intent: "secondary" })}>Hidden after sm</button>
+        </div>
+      </>
+    );
+    ```
+
+    **Create a bespoke variant that encodes the breakpoint**
+
+    ```ts
+    button({ intent: "primaryUntilMd" })
+    ```
+
+    <Info>
+      Responsive variants are typically rare in practice. Showing and hiding different elements is usually sufficient. Building a generalised responsive-variants system requires deep integration with each build tool and CSS framework — that work is not planned at this time.
+    </Info>
+  </Accordion>
+
+  <Accordion title="What's the difference between `class-variance-authority` and `cva`?">
+    They are two separate npm packages that represent different major versions of the same library.
+
+    | | `class-variance-authority` | `cva` |
+    |---|---|---|
+    | Version | 0.x (legacy) | 1.x (current) |
+    | `cva()` signature | `cva(base, options)` | `cva({ base, variants, … })` |
+    | `compose` | Not available | Exported |
+    | `defineConfig` | Not available | Exported |
+
+    The `class-variance-authority` package is the original release and remains on npm for backwards compatibility. New projects should use the `cva` package. See [Migrating](/migrating) for a step-by-step upgrade guide.
+  </Accordion>
+
+  <Accordion title="Can I use CVA without Tailwind CSS?">
+    Yes. CVA is CSS-framework agnostic.
+
+    It works with plain CSS class names, CSS Modules, any utility library, or no CSS framework at all. `cva` simply concatenates strings — it has no knowledge of or dependency on Tailwind CSS.
+
+    ```ts components/button.ts
+    import { cva } from "cva";
+
+    // Plain CSS class names
+    const button = cva({
+      base: "btn",
+      variants: {
+        intent: {
+          primary: "btn--primary",
+          secondary: "btn--secondary",
+        },
+        size: {
+          sm: "btn--sm",
+          lg: "btn--lg",
+        },
+      },
+      defaultVariants: { intent: "primary", size: "sm" },
+    });
+    ```
+
+    ```css button.css
+    .btn { display: inline-flex; border-radius: 0.25rem; }
+    .btn--primary { background: blue; color: white; }
+    .btn--secondary { background: white; color: black; }
+    .btn--sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
+    .btn--lg { padding: 0.5rem 1rem; font-size: 1rem; }
+    ```
+  </Accordion>
+
+  <Accordion title="How do I handle Tailwind class conflicts?">
+    Tailwind resolves styles by the order classes appear in your stylesheet, not your `class` attribute. Two conflicting utilities — for example `p-2` and `p-4` — will not resolve predictably when merged at runtime.
+
+    Use [`tailwind-merge`](https://github.com/dcastil/tailwind-merge) via `defineConfig` to resolve conflicts globally across all components:
+
+    ```ts lib/utils.ts
+    import { defineConfig } from "cva";
+    import { twMerge } from "tailwind-merge";
+
+    export const { cva, cx, compose } = defineConfig({
+      hooks: {
+        onComplete: (className) => twMerge(className),
+      },
+    });
+    ```
+
+    Then import `cva`, `cx`, and `compose` from your local module instead of from `cva` directly. Every component that uses the re-exported functions will have conflict resolution applied automatically.
+
+    See the [Tailwind CSS guide](/guides/tailwind-css) for the full setup.
+  </Accordion>
+
+  <Accordion title="Does CVA work with CSS Modules?">
+    Yes. Pass CSS Module class names the same way you would any other string.
+
+    ```ts components/button.ts
+    import { cva } from "cva";
+    import styles from "./button.module.css";
+
+    const button = cva({
+      base: styles.base,
+      variants: {
+        intent: {
+          primary: styles.primary,
+          secondary: styles.secondary,
+        },
+        size: {
+          sm: styles.sm,
+          lg: styles.lg,
+        },
+      },
+      defaultVariants: { intent: "primary", size: "sm" },
+    });
+    ```
+
+    ```css button.module.css
+    .base { display: inline-flex; border-radius: 0.25rem; }
+    .primary { background: blue; color: white; }
+    .secondary { background: white; color: black; }
+    .sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
+    .lg { padding: 0.5rem 1rem; font-size: 1rem; }
+    ```
+
+    Because CSS Modules generate unique class names at build time, there are no runtime conflicts to worry about.
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,225 @@
+---
+title: "Types"
+description: "TypeScript types exported from the cva package."
+---
+
+# Types
+
+All types are exported from the `cva` package and can be imported directly.
+
+```ts
+import type {
+  ClassValue,
+  ClassDictionary,
+  ClassArray,
+  VariantProps,
+  CX,
+  CXOptions,
+  CXReturn,
+  CVA,
+  Compose,
+  DefineConfig,
+  DefineConfigOptions,
+} from "cva";
+```
+
+---
+
+## ClassValue
+
+The union of all valid inputs accepted by `cx` and the `base`, `variants`, and `compoundVariants` fields of `cva`.
+
+```ts
+export type ClassValue =
+  | ClassArray
+  | ClassDictionary
+  | string
+  | number
+  | bigint
+  | null
+  | boolean
+  | undefined;
+```
+
+---
+
+## ClassDictionary
+
+An object whose values determine whether each key (a class name) is included. Truthy values include the class; falsy values exclude it.
+
+```ts
+export type ClassDictionary = Record<string, any>;
+```
+
+---
+
+## ClassArray
+
+A recursive array of `ClassValue` items. Useful for grouping related classes.
+
+```ts
+export type ClassArray = ClassValue[];
+```
+
+---
+
+## VariantProps
+
+A utility type that extracts the variant prop types from a CVA component function. The `class` and `className` props are omitted from the result.
+
+```ts
+export type VariantProps<Component extends (...args: any) => any> = Omit<
+  OmitUndefined<Parameters<Component>[0]>,
+  "class" | "className"
+>;
+```
+
+**Usage**
+
+```ts
+import { cva, type VariantProps } from "cva";
+
+const button = cva({
+  base: "btn",
+  variants: {
+    intent: { primary: "btn--primary", secondary: "btn--secondary" },
+    size: { sm: "btn--sm", lg: "btn--lg" },
+  },
+});
+
+type ButtonProps = VariantProps<typeof button>;
+// => { intent?: "primary" | "secondary"; size?: "sm" | "lg" }
+```
+
+---
+
+## CX
+
+The interface for the `cx` function.
+
+```ts
+export interface CX {
+  (...inputs: ClassValue[]): string;
+}
+```
+
+---
+
+## CXOptions
+
+The parameter type of `CX`. Equivalent to `ClassValue[]`.
+
+```ts
+export type CXOptions = Parameters<CX>;
+```
+
+---
+
+## CXReturn
+
+The return type of `CX`. Always `string`.
+
+```ts
+export type CXReturn = ReturnType<CX>;
+```
+
+---
+
+## CVA
+
+The interface for the `cva` function.
+
+```ts
+export interface CVA {
+  <
+    _ extends "cva's generic parameters are restricted to internal use only.",
+    V,
+  >(
+    config: V extends CVAVariantShape
+      ? CVAConfigBase & {
+          variants?: V;
+          compoundVariants?: (V extends CVAVariantShape
+            ? (
+                | CVAVariantSchema<V>
+                | {
+                    [Variant in keyof V]?:
+                      | StringToBoolean<keyof V[Variant]>
+                      | StringToBoolean<keyof V[Variant]>[]
+                      | undefined;
+                  }
+              ) &
+                CVAClassProp
+            : CVAClassProp)[];
+          defaultVariants?: CVAVariantSchema<V>;
+        }
+      : CVAConfigBase & {
+          variants?: never;
+          compoundVariants?: never;
+          defaultVariants?: never;
+        },
+  ): (props?: V extends CVAVariantShape
+    ? CVAVariantSchema<V> & CVAClassProp
+    : CVAClassProp) => string;
+}
+```
+
+---
+
+## Compose
+
+The interface for the `compose` function.
+
+```ts
+export interface Compose {
+  <T extends ReturnType<CVA>[]>(
+    ...components: [...T]
+  ): (
+    props?: (
+      | UnionToIntersection<
+          {
+            [K in keyof T]: VariantProps<T[K]>;
+          }[number]
+        >
+      | undefined
+    ) &
+      CVAClassProp,
+  ) => string;
+}
+```
+
+---
+
+## DefineConfig
+
+The interface for the `defineConfig` function.
+
+```ts
+export interface DefineConfig {
+  (options?: DefineConfigOptions): {
+    compose: Compose;
+    cx: CX;
+    cva: CVA;
+  };
+}
+```
+
+---
+
+## DefineConfigOptions
+
+The options object accepted by `defineConfig`.
+
+```ts
+export interface DefineConfigOptions {
+  hooks?: {
+    /**
+     * @deprecated Use `onComplete` instead.
+     */
+    "cx:done"?: (className: string) => string;
+    /**
+     * Returns the completed string of concatenated classes/classNames.
+     */
+    onComplete?: (className: string) => string;
+  };
+}
+```

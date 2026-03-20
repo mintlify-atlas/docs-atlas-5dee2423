@@ -1,0 +1,195 @@
+---
+title: "TypeScript"
+description: "Extract and use variant prop types with VariantProps for fully type-safe CVA components."
+---
+
+# TypeScript
+
+CVA is written in TypeScript and ships full type declarations. The `VariantProps` utility type is the primary tool for connecting your `cva` definitions to your component interfaces.
+
+## Extracting variant types with `VariantProps`
+
+`VariantProps<typeof component>` infers the variant prop types directly from your `cva` definition. This means your types and your variant config stay in sync automatically — no manual duplication:
+
+```ts components/button.ts
+import { cva, type VariantProps } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+});
+
+export type ButtonProps = VariantProps<typeof button>;
+// => { intent?: "primary" | "secondary"; size?: "small" | "medium" }
+```
+
+## Using `VariantProps` in a component
+
+<Tabs>
+  <Tab title="React">
+    Extend your component's props interface with `VariantProps` and forward the variant props into the `cva` call:
+
+    ```tsx components/Button.tsx
+    import type { VariantProps } from "class-variance-authority";
+    import { cva } from "class-variance-authority";
+
+    const button = cva(["font-semibold", "border", "rounded"], {
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          small: ["text-sm", "py-1", "px-2"],
+          medium: ["text-base", "py-2", "px-4"],
+        },
+      },
+      defaultVariants: {
+        intent: "primary",
+        size: "medium",
+      },
+    });
+
+    interface ButtonProps
+      extends VariantProps<typeof button>,
+        React.ButtonHTMLAttributes<HTMLButtonElement> {}
+
+    export function Button({ intent, size, className, ...props }: ButtonProps) {
+      return (
+        <button
+          className={button({ intent, size, className })}
+          {...props}
+        />
+      );
+    }
+    ```
+  </Tab>
+  <Tab title="Other frameworks">
+    `VariantProps` works the same way in any TypeScript-based framework. Extract the type from the `cva` definition and use it in your component's props:
+
+    ```ts components/button.ts
+    import type { VariantProps } from "class-variance-authority";
+    import { cva } from "class-variance-authority";
+
+    export const button = cva(["font-semibold", "border", "rounded"], {
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          small: ["text-sm", "py-1", "px-2"],
+          medium: ["text-base", "py-2", "px-4"],
+        },
+      },
+    });
+
+    export type ButtonVariantProps = VariantProps<typeof button>;
+    ```
+  </Tab>
+</Tabs>
+
+## Required variants
+
+All variant props are optional by default (they can fall back to `defaultVariants`). To make a variant required, use TypeScript utility types:
+
+```ts components/button.ts
+import { cva, type VariantProps } from "class-variance-authority";
+
+export type ButtonVariantProps = VariantProps<typeof buttonVariants>;
+export const buttonVariants = cva("…", {
+  variants: {
+    optional: { a: "…", b: "…" },
+    required: { a: "…", b: "…" },
+  },
+});
+
+/**
+ * Button — "required" variant must always be provided
+ */
+export interface ButtonProps
+  extends Omit<ButtonVariantProps, "required">,
+    Required<Pick<ButtonVariantProps, "required">> {}
+
+export const button = (props: ButtonProps) => buttonVariants(props);
+
+// ❌ TypeScript Error:
+// Argument of type '{}' is not assignable to parameter of type 'ButtonProps'.
+//   Property 'required' is missing in type '{}' but required in type 'ButtonProps'.
+button({});
+
+// ✅
+button({ required: "a" });
+```
+
+## The `class` and `className` props
+
+CVA accepts either `class` or `className` for one-off class overrides. The two props are mutually exclusive — the type system prevents you from passing both at once:
+
+```ts
+// cva's CVAClassProp type (from source)
+type CVAClassProp =
+  | { class?: ClassValue; className?: never }
+  | { class?: never; className?: ClassValue };
+```
+
+This means `VariantProps` intentionally omits both `class` and `className` from the extracted type. Pass them directly to the component call instead:
+
+```ts
+button({ intent: "primary", class: "m-4" });
+button({ intent: "primary", className: "m-4" });
+```
+
+## The `ClassValue` type
+
+`ClassValue` is re-exported from CVA and mirrors the type accepted by [`clsx`](https://github.com/lukeed/clsx). Use it when you want a component to accept arbitrary class inputs:
+
+```ts
+import type { ClassValue } from "class-variance-authority";
+// or from the cva package:
+import type { ClassValue } from "cva";
+
+// ClassValue accepts strings, arrays, objects, booleans, null, and undefined
+type ClassValue =
+  | string
+  | number
+  | bigint
+  | boolean
+  | null
+  | undefined
+  | ClassDictionary
+  | ClassArray;
+```
+
+A common pattern is to accept `ClassValue` for an extra classes prop and merge it with the CVA output:
+
+```ts components/button.ts
+import { cva, cx, type ClassValue, type VariantProps } from "cva";
+
+const buttonVariants = cva({
+  base: ["font-semibold", "border", "rounded"],
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+  },
+  defaultVariants: { intent: "primary" },
+});
+
+interface ButtonProps extends VariantProps<typeof buttonVariants> {
+  extraClasses?: ClassValue;
+}
+
+export function button({ intent, extraClasses }: ButtonProps) {
+  return cx(buttonVariants({ intent }), extraClasses);
+}
+```

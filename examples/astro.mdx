@@ -1,0 +1,135 @@
+---
+title: "Astro"
+description: "Use CVA in Astro components with the class:list directive and TypeScript-typed props."
+---
+
+CVA integrates cleanly with Astro's component model. Since Astro components run at build time, you can define and call CVA functions in the frontmatter script block and pass the result directly to elements using Astro's `class:list` directive or standard `class` attribute.
+
+## Installation
+
+```bash
+npm install class-variance-authority
+```
+
+## The `class:list` directive
+
+Astro provides a `class:list` directive that accepts strings, arrays, and objects — making it easy to combine CVA output with additional static classes:
+
+```astro index.astro
+---
+// class:list accepts arrays, so CVA's output works directly
+---
+
+<div class:list={["static-class", someVariable && "conditional-class"]}>
+  ...
+</div>
+```
+
+When using CVA, pass the CVA result directly to `class` (not `class:list`) since CVA already returns a single merged string:
+
+```astro
+<button class={button({ intent, size, disabled, className })}>
+  ...
+</button>
+```
+
+## Button component
+
+A complete Astro button component using CVA with Tailwind CSS:
+
+```astro button.astro
+---
+import type { HTMLAttributes } from "astro/types";
+import { cva, type VariantProps } from "class-variance-authority";
+
+const button = cva("button", {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+    disabled: {
+      false: null,
+      true: ["opacity-50", "cursor-not-allowed"],
+    },
+  },
+  compoundVariants: [
+    {
+      intent: "primary",
+      disabled: false,
+      class: "hover:bg-blue-600",
+    },
+    {
+      intent: "secondary",
+      disabled: false,
+      class: "hover:bg-gray-100",
+    },
+    { intent: "primary", size: "medium", class: "uppercase" },
+  ],
+});
+
+export interface Props
+  extends Omit<HTMLAttributes<"button">, "disabled">,
+    VariantProps<typeof button> {}
+
+/**
+ * For Astro components, we recommend setting your defaultVariants within
+ * Astro.props (which are `undefined` by default)
+ */
+const {
+  class: className,
+  intent = "primary",
+  size = "medium",
+  disabled = false,
+} = Astro.props;
+---
+
+<button
+  class={button({ intent, size, disabled, className })}
+  disabled={disabled}
+>
+  <slot />
+</button>
+```
+
+<Note>
+  In Astro, `defaultVariants` in the CVA config are optional — instead, set your defaults directly when destructuring `Astro.props`. This follows Astro's idiomatic prop pattern where props are `undefined` by default.
+</Note>
+
+### Consuming the component
+
+```astro index.astro
+---
+import Button from "../components/button.astro";
+---
+
+<!-- Uses prop defaults (primary, medium, enabled) -->
+<Button>Click me</Button>
+
+<!-- Explicit variants -->
+<Button intent="secondary" size="small">Cancel</Button>
+
+<!-- Disabled -->
+<Button disabled>Unavailable</Button>
+```
+
+### Using `class:list` in a page
+
+You can also use `class:list` directly on page-level elements for static class composition:
+
+```astro index.astro
+---
+import Button from "../components/button.astro";
+---
+
+<html lang="en" class="h-full">
+  <body class:list={["grid", "h-full w-full", "p-6"]}>
+    <Button intent="primary" size="medium">Submit</Button>
+    <Button intent="secondary" size="small" disabled>Cancel</Button>
+  </body>
+</html>
+```

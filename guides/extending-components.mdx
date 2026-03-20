@@ -1,0 +1,124 @@
+---
+title: "Extending Components"
+description: "Override variants on an existing CVA component, create specialized variants using VariantProps, and combine components with compose."
+---
+
+# Extending components
+
+CVA provides several ways to extend or build on top of existing components: ad-hoc class overrides via the `class` prop, specialized components that share a base variant definition, and the `compose` helper for merging two CVA components into one.
+
+## Ad-hoc overrides with the `class` prop
+
+Every CVA component accepts an optional `class` **or** `className` prop. Classes passed here are appended after all resolved variant classes, making them the simplest way to add one-off styles:
+
+```typescript components/button.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(/* … */);
+
+button({ class: "m-4" });
+// => "…buttonClasses m-4"
+
+button({ className: "m-4" });
+// => "…buttonClasses m-4"
+```
+
+<Note>
+  `class` and `className` are mutually exclusive. Passing both at once is a TypeScript error.
+</Note>
+
+For style conflict resolution when overriding Tailwind classes, see the [Tailwind CSS guide](/guides/tailwind-css).
+
+## Creating a specialized variant
+
+When you want a component that always sets a specific variant value — for example, a `PrimaryButton` that is always `intent: "primary"` — extract the variant props with `VariantProps` and re-use the same `cva` definition:
+
+```typescript components/button.ts
+import { cva, type VariantProps } from "class-variance-authority";
+
+export const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+  },
+});
+
+export type ButtonProps = VariantProps<typeof button>;
+
+// A specialized variant that locks in the intent
+export type PrimaryButtonProps = Omit<ButtonProps, "intent">;
+export const primaryButton = (props: PrimaryButtonProps) =>
+  button({ ...props, intent: "primary" });
+```
+
+`VariantProps` infers the full set of variant props from the `cva` definition, giving you a type-safe foundation to build on.
+
+## Composing two CVA components with `compose`
+
+The `compose` helper (available in the `cva` package) merges two or more CVA components into a single callable. The returned function accepts the union of all variant props and resolves each component's classes:
+
+```typescript components/card.ts
+import { cva, compose } from "cva";
+import type { VariantProps } from "cva";
+
+const box = cva({
+  base: ["box", "box-border"],
+  variants: {
+    margin: { 0: "m-0", 2: "m-2", 4: "m-4", 8: "m-8" },
+    padding: { 0: "p-0", 2: "p-2", 4: "p-4", 8: "p-8" },
+  },
+  defaultVariants: {
+    margin: 0,
+    padding: 0,
+  },
+});
+
+const cardBase = cva({
+  base: ["card", "border-solid", "border-slate-300", "rounded"],
+  variants: {
+    shadow: {
+      md: "drop-shadow-md",
+      lg: "drop-shadow-lg",
+      xl: "drop-shadow-xl",
+    },
+  },
+});
+
+export const card = compose(box, cardBase);
+export type CardProps = VariantProps<typeof card>;
+
+card({ margin: 4, padding: 2, shadow: "md" });
+// => "box box-border m-4 p-2 card border-solid border-slate-300 rounded drop-shadow-md"
+```
+
+The `card` function accepts `margin`, `padding`, and `shadow` as a single flat props object. `compose` distributes the props to each component internally.
+
+<Note>
+  `compose` is exported from the `cva` package (v1+). It is not available in the legacy `class-variance-authority` package.
+</Note>
+
+## Choosing an approach
+
+<CardGroup cols={3}>
+  <Card title="class prop" icon="pen">
+    One-off overrides at the call site. No new abstraction needed.
+  </Card>
+  <Card title="VariantProps specialization" icon="layers">
+    Lock in one or more variants. Keeps the base definition as the source of truth.
+  </Card>
+  <Card title="compose" icon="combine">
+    Merge independent variant sets into one component. Requires `cva` v1+.
+  </Card>
+</CardGroup>
+
+For the `cx`-based manual composition approach, see [Composing components](/getting-started/composing-components).

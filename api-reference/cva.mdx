@@ -1,0 +1,176 @@
+---
+title: "cva"
+description: "Build a type-safe variant component that resolves to a class string."
+---
+
+# cva
+
+`cva` builds a component function. Call it with a config object describing base classes, variants, compound variants, and default variants. It returns a function that accepts variant props and an optional `class` or `className`, and returns a resolved class string.
+
+## Signature
+
+```ts
+import { cva } from "cva";
+
+interface CVA {
+  <_ extends "cva's generic parameters are restricted to internal use only.", V>(
+    config: V extends CVAVariantShape
+      ? CVAConfigBase & {
+          variants?: V;
+          compoundVariants?: (CVAVariantSchema<V> | { … }) & CVAClassProp)[];
+          defaultVariants?: CVAVariantSchema<V>;
+        }
+      : CVAConfigBase & {
+          variants?: never;
+          compoundVariants?: never;
+          defaultVariants?: never;
+        },
+  ): (props?: CVAVariantSchema<V> & CVAClassProp) => string;
+}
+```
+
+## Parameters
+
+<ParamField body="base" type="ClassValue">
+  Base classes that are applied to every instance of the component, regardless of which variants are active. Accepts any value supported by `clsx`: a string, an array of strings, an object with boolean values, `null`, `undefined`, or `boolean`.
+
+  ```ts
+  const button = cva({ base: "font-semibold border rounded" });
+  // or as an array
+  const button = cva({ base: ["font-semibold", "border", "rounded"] });
+  ```
+</ParamField>
+
+<ParamField body="variants" type="Record<string, Record<string, ClassValue>>">
+  A map of variant groups. Each key is a variant name; its value is a map of variant option names to class values.
+
+  ```ts
+  const button = cva({
+    base: "font-semibold rounded",
+    variants: {
+      intent: {
+        primary: "bg-blue-500 text-white",
+        secondary: "bg-white text-gray-800",
+      },
+      size: {
+        sm: "text-sm py-1 px-2",
+        md: "text-base py-2 px-4",
+      },
+    },
+  });
+  ```
+
+  String variant keys that spell `"true"` or `"false"` are automatically widened to the `boolean` type in the returned function's props.
+</ParamField>
+
+<ParamField body="compoundVariants" type="Array<VariantCondition & CVAClassProp>">
+  An array of rules that apply additional classes when a specific combination of variants is active. Each entry is a partial variant condition object plus a `class` or `className` property.
+
+  The condition matches when **all** specified variant keys equal the given values. A value can also be an array, in which case the condition matches when the active variant is any of the listed values.
+
+  ```ts
+  const button = cva({
+    base: "font-semibold rounded",
+    variants: {
+      intent: { primary: "bg-blue-500", secondary: "bg-white" },
+      disabled: { true: "opacity-50", false: null },
+    },
+    compoundVariants: [
+      // Matches when intent is primary AND disabled is false
+      { intent: "primary", disabled: false, class: "hover:bg-blue-600" },
+      // Matches when intent is primary OR secondary AND size is md
+      { intent: ["primary", "secondary"], disabled: false, class: "cursor-pointer" },
+    ],
+  });
+  ```
+</ParamField>
+
+<ParamField body="defaultVariants" type="Partial<VariantSchema>">
+  Default values for variant keys. Applied when the caller does not pass a value for a given variant.
+
+  ```ts
+  const button = cva({
+    base: "font-semibold rounded",
+    variants: {
+      intent: { primary: "bg-blue-500", secondary: "bg-white" },
+      size: { sm: "text-sm", md: "text-base" },
+    },
+    defaultVariants: {
+      intent: "primary",
+      size: "md",
+    },
+  });
+  ```
+</ParamField>
+
+## Return value
+
+`cva` returns a component function. The component function accepts an optional props object:
+
+<ResponseField name="props" type="object">
+  <Expandable title="props">
+    <ResponseField name="[variantKey]" type="string | boolean">
+      One key per variant defined in the config. Each value must be a valid option name for that variant. Omitting a key uses the `defaultVariants` value, if one is set.
+    </ResponseField>
+    <ResponseField name="class" type="ClassValue">
+      Extra classes to append. Cannot be used together with `className`.
+    </ResponseField>
+    <ResponseField name="className" type="ClassValue">
+      Extra classes to append. Cannot be used together with `class`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+The component function returns a `string` of concatenated class names.
+
+## Complete example
+
+```ts components/button.ts
+import { cva, type VariantProps } from "cva";
+
+const button = cva({
+  base: ["font-semibold", "border", "rounded"],
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      sm: ["text-sm", "py-1", "px-2"],
+      md: ["text-base", "py-2", "px-4"],
+    },
+    disabled: {
+      true: ["opacity-50", "cursor-not-allowed"],
+      false: null,
+    },
+  },
+  compoundVariants: [
+    { intent: "primary", disabled: false, class: "hover:bg-blue-600" },
+    { intent: "secondary", disabled: false, class: "hover:bg-gray-100" },
+    { intent: "primary", size: "md", class: "uppercase" },
+  ],
+  defaultVariants: {
+    intent: "primary",
+    size: "md",
+    disabled: false,
+  },
+});
+
+export type ButtonProps = VariantProps<typeof button>;
+
+// Resolved with defaults
+button();
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 hover:bg-blue-600 uppercase"
+
+// Override a variant
+button({ intent: "secondary", size: "sm" });
+// => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2 hover:bg-gray-100"
+
+// Pass extra classes via className
+button({ className: "w-full" });
+// => "font-semibold border rounded bg-blue-500 … uppercase w-full"
+```
+
+<Note>
+  The `cva` package uses a single config-object signature. If you are migrating from the legacy `class-variance-authority` package, which used `cva(base, options)`, see the [migration guide](/migrating).
+</Note>

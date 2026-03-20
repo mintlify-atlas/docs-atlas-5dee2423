@@ -1,0 +1,133 @@
+---
+title: "Other Use Cases"
+description: "CVA patterns for BEM, 11ty/Eleventy, dynamic text content, and other non-Tailwind workflows."
+---
+
+Although primarily designed for handling class names, at its core, `cva` is really just a fancy way of managing a string. This makes it useful in a variety of contexts beyond UI component libraries.
+
+<AccordionGroup>
+  <Accordion title="BEM">
+    CVA maps naturally onto BEM (Block Element Modifier) naming conventions. Define your base block class as the first argument, then use modifier classes as variant values.
+
+    ```css styles.css
+    .button {
+      /* */
+    }
+
+    .button--primary {
+      /* */
+    }
+    .button--secondary {
+      /* */
+    }
+
+    .button--small {
+      /* */
+    }
+    .button--medium {
+      /* */
+    }
+
+    .button--primary-small {
+      /* */
+    }
+    ```
+
+    ```ts button.ts
+    import { cva } from "class-variance-authority";
+
+    const button = cva("button", {
+      variants: {
+        intent: {
+          primary: "button--primary",
+          secondary: "button--secondary",
+        },
+        size: {
+          small: "button--small",
+          medium: "button--medium",
+        },
+      },
+      compoundVariants: [
+        { intent: "primary", size: "medium", class: "button--primary-small" },
+      ],
+      defaultVariants: {
+        intent: "primary",
+        size: "medium",
+      },
+    });
+
+    button();
+    // => "button button--primary button--medium"
+
+    button({ intent: "secondary", size: "small" });
+    // => "button button--secondary button--small"
+    ```
+  </Accordion>
+
+  <Accordion title="11ty (Eleventy)">
+    Use CVA in 11ty JavaScript templates to generate class strings server-side. Since 11ty runs in Node.js, use `require` to import CVA.
+
+    ```js button.11ty.js
+    const { cva } = require("class-variance-authority");
+
+    // ⚠️ Disclaimer: Use of Tailwind CSS is optional
+    const button = cva("button", {
+      variants: {
+        intent: {
+          primary: [
+            "bg-blue-500",
+            "text-white",
+            "border-transparent",
+            "hover:bg-blue-600",
+          ],
+          secondary: [
+            "bg-white",
+            "text-gray-800",
+            "border-gray-400",
+            "hover:bg-gray-100",
+          ],
+        },
+        size: {
+          small: ["text-sm", "py-1", "px-2"],
+          medium: ["text-base", "py-2", "px-4"],
+        },
+      },
+      compoundVariants: [{ intent: "primary", size: "medium", class: "uppercase" }],
+      defaultVariants: {
+        intent: "primary",
+        size: "medium",
+      },
+    });
+
+    module.exports = function ({ label, intent, size }) {
+      return `<button class="${button({ intent, size })}">${label}</button>`;
+    };
+    ```
+  </Accordion>
+
+  <Accordion title="Dynamic text content">
+    `cva` isn't limited to class names — since it returns a plain string, you can use it to manage any variant-driven text output.
+
+    ```ts
+    import { cva } from "class-variance-authority";
+
+    const greeter = cva("Good morning!", {
+      variants: {
+        isLoggedIn: {
+          true: "Here's a secret only logged in users can see",
+          false: "Log in to find out more\u2026",
+        },
+      },
+      defaultVariants: {
+        isLoggedIn: "false",
+      },
+    });
+
+    greeter();
+    // => "Good morning! Log in to find out more\u2026"
+
+    greeter({ isLoggedIn: "true" });
+    // => "Good morning! Here's a secret only logged in users can see"
+    ```
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,61 @@
+---
+title: "Introduction"
+description: "Class Variance Authority (CVA) is a tiny, TypeScript-first library for building type-safe UI component variants with any CSS approach."
+---
+
+# Introduction
+
+CSS-in-TS libraries such as [Stitches](https://stitches.dev/docs/variants) and [Vanilla Extract](https://vanilla-extract.style/documentation/api/style-variants/) are fantastic options for building type-safe UI components — taking away all the worries of class names and stylesheet composition.
+
+But CSS-in-TS isn't for everyone.
+
+You may need full control over your stylesheet output. Your job might require you to use a framework such as Tailwind CSS. You might just prefer writing your own CSS.
+
+Creating variants with the "traditional" CSS approach can become an arduous task: manually matching classes to props and manually adding types.
+
+`cva` aims to take those pain points away, allowing you to focus on the more fun aspects of UI development.
+
+## What is CVA?
+
+**Class Variance Authority** (`cva`) is a utility function that lets you define component variants in a structured, type-safe way. You describe your base classes and the variants your component supports — `cva` handles resolving the right classes at runtime based on the props passed in.
+
+It supports:
+
+- **Variants** — named sets of classes applied based on a prop value
+- **Compound variants** — classes applied only when multiple variant conditions are met simultaneously
+- **Default variants** — fallback values when no prop is provided
+- **`VariantProps`** — a TypeScript utility type for extracting the variant prop types from a `cva` component
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="package" href="/getting-started/installation">
+    Install CVA via npm, yarn, pnpm, or bun and configure it for your project.
+  </Card>
+  <Card title="Quickstart" icon="bolt" href="/getting-started/quickstart">
+    Build your first variant component in minutes with a step-by-step walkthrough.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Full reference for `cva`, `cx`, `compose`, `defineConfig`, and `VariantProps`.
+  </Card>
+  <Card title="Examples" icon="rectangle-list" href="/examples">
+    See CVA used with Tailwind CSS, plain CSS, React, Vue, and more.
+  </Card>
+</CardGroup>
+
+## Key benefits
+
+- **Framework-agnostic** — works with React, Vue, Svelte, Solid, plain HTML, or any other environment
+- **Tiny** — approximately 1.6 KB minified and gzipped
+- **TypeScript-first** — variants and their values are fully typed; invalid variant values are caught at compile time
+- **CSS-agnostic** — works with Tailwind CSS, CSS Modules, plain class names, or any other class-based styling approach
+- **No runtime style injection** — outputs plain strings; your existing stylesheet pipeline is untouched
+
+## Package names
+
+<Note>
+  CVA is available under two package names depending on which version you are using.
+
+  - **`class-variance-authority`** — the original stable package name, available on npm since the project launched
+  - **`cva`** — the shorter alias used from v1 onwards, after GitHub transferred npm ownership of the `cva` package name to the project author in 2022
+
+  For new projects, install `class-variance-authority`. The `cva` package name will become the primary name with the v1 release. In the meantime, you can alias `class-variance-authority` as `cva` — see [Installation](/getting-started/installation) for instructions.
+</Note>

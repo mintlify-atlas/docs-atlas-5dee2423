@@ -1,97 +1,99 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "CVA — Class Variance Authority"
+description: "A tiny TypeScript library for building type-safe, variant-driven CSS class name components."
 ---
 
-## Setting up
-
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Get started" icon="rocket" href="/introduction">
+    Install CVA and build your first variant component in minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="API Reference" icon="code" href="/api-reference/cva">
+    Explore the full API — cva, cx, compose, and defineConfig.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Core Concepts" icon="layers" href="/getting-started/variants">
+    Learn variants, compound variants, default variants, and composition.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Examples" icon="puzzle-piece" href="/examples/react">
+    See CVA in action with React, Vue, Svelte, Astro, and more.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## What is CVA?
 
-Everything you need to create world-class documentation.
+**Class Variance Authority** (`cva`) is a tiny (~1.6KB) TypeScript utility for creating type-safe component variants. Instead of juggling conditional class strings by hand, you declare your variants declaratively and let CVA handle the logic.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+```typescript
+import { cva } from "class-variance-authority";
 
-## Need inspiration?
+const button = cva("font-semibold border rounded", {
+  variants: {
+    intent: {
+      primary: "bg-blue-500 text-white border-transparent",
+      secondary: "bg-white text-gray-800 border-gray-400",
+    },
+    size: {
+      small: "text-sm py-1 px-2",
+      medium: "text-base py-2 px-4",
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+  },
+});
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+button({ intent: "secondary", size: "small" });
+// => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2"
+```
+
+## Why CVA?
+
+<CardGroup cols={2}>
+  <Card title="Type-safe variants" icon="shield-check">
+    Full TypeScript inference — autocomplete for every variant value, and compile-time errors for invalid combinations.
+  </Card>
+  <Card title="Framework-agnostic" icon="globe">
+    Works anywhere CSS class names work — React, Vue, Svelte, Astro, plain HTML, and more.
+  </Card>
+  <Card title="Tiny footprint" icon="feather">
+    Under 1.6KB minzipped. No runtime overhead — just string concatenation done right.
+  </Card>
+  <Card title="Composable" icon="puzzle-piece">
+    Combine multiple CVA components together with `compose` and `cx`.
+  </Card>
+</CardGroup>
+
+## Key features
+
+- **Variants** — define visual or behavioral variants (size, intent, state) as named keys with class values
+- **Compound variants** — apply classes only when multiple variant conditions are met simultaneously
+- **Default variants** — set sensible fallback values so callers don't have to pass every prop
+- **`cx` utility** — a re-exported `clsx` alias for merging arbitrary class names
+- **`compose`** — merge the variant props of multiple CVA components into one function
+- **`defineConfig`** — create a custom instance with an `onComplete` hook (e.g. to run `tailwind-merge` on every output)
+
+## Quick install
+
+<CodeGroup>
+
+```bash npm
+npm install class-variance-authority
+```
+
+```bash yarn
+yarn add class-variance-authority
+```
+
+```bash pnpm
+pnpm add class-variance-authority
+```
+
+```bash bun
+bun add class-variance-authority
+```
+
+</CodeGroup>
+
+<Note>
+  From v1 onwards the package is also published as `cva`. During the beta period use `class-variance-authority` or alias it — see the [installation guide](/getting-started/installation) for details.
+</Note>

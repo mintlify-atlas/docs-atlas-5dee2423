@@ -1,0 +1,97 @@
+---
+title: "Default Variants"
+description: "Set fallback variant values that apply when a prop is not explicitly passed."
+---
+
+# Default variants
+
+`defaultVariants` lets you declare a fallback value for each variant. When a caller omits a prop, CVA uses the default instead of leaving the variant unresolved.
+
+## Setting defaults
+
+Add a `defaultVariants` key to the config object. Each key must match a key in `variants`:
+
+```ts components/button.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+  },
+});
+
+// No props — both defaults apply
+button();
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4"
+
+// Overriding one default
+button({ size: "small" });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-sm py-1 px-2"
+```
+
+## `undefined` vs `null`
+
+Passing `undefined` for a variant prop is the same as omitting it — the default is used. Passing `null` explicitly removes the default and produces no classes for that variant:
+
+```ts
+// undefined → default is used
+button({ intent: undefined });
+// => same as button() — uses intent="primary" default
+
+// null → default is suppressed, no intent classes applied
+button({ intent: null });
+// => "font-semibold border rounded text-base py-2 px-4"
+//    (no bg, text color, or border classes from the intent variant)
+```
+
+<Warning>
+  Passing `null` to remove a default is only available in the `class-variance-authority` legacy package. In the `cva` package (v1+), `null` is not accepted as a variant value — omit the prop or use `undefined` to fall back to the default.
+</Warning>
+
+## Defaults and compound variants
+
+Default variant values are taken into account when evaluating compound variants. If a compound variant condition matches the default value of a prop, it will apply even when the caller does not explicitly pass that prop:
+
+```ts components/button.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    disabled: {
+      false: null,
+      true: ["opacity-50", "cursor-not-allowed"],
+    },
+  },
+  compoundVariants: [
+    {
+      intent: "primary",
+      disabled: false,
+      class: "hover:bg-blue-600",
+    },
+  ],
+  defaultVariants: {
+    intent: "primary",
+    disabled: false,
+  },
+});
+
+// Both defaults match the compound variant condition,
+// so "hover:bg-blue-600" is included even with no explicit props
+button();
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent hover:bg-blue-600"
+```

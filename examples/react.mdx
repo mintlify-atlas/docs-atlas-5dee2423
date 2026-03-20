@@ -1,0 +1,221 @@
+---
+title: "React"
+description: "Use CVA to build type-safe, variant-driven components in React with Tailwind CSS or CSS Modules."
+---
+
+CVA works seamlessly with React. Import `cva` to define your variants and `VariantProps` to derive TypeScript types directly from your variant config.
+
+## Installation
+
+```bash
+npm install class-variance-authority
+```
+
+## With Tailwind CSS
+
+Define variants using Tailwind utility classes, then extend `VariantProps` to get full type inference on your component props.
+
+### Component
+
+```tsx button.tsx
+import React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+
+const button = cva("button", {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+    disabled: {
+      false: null,
+      true: ["opacity-50", "cursor-not-allowed"],
+    },
+  },
+  compoundVariants: [
+    {
+      intent: "primary",
+      disabled: false,
+      class: "hover:bg-blue-600",
+    },
+    {
+      intent: "secondary",
+      disabled: false,
+      class: "hover:bg-gray-100",
+    },
+    { intent: "primary", size: "medium", class: "uppercase" },
+  ],
+  defaultVariants: {
+    disabled: false,
+    intent: "primary",
+    size: "medium",
+  },
+});
+
+export interface ButtonProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "disabled">,
+    VariantProps<typeof button> {}
+
+export const Button: React.FC<ButtonProps> = ({
+  className,
+  intent,
+  size,
+  disabled,
+  ...props
+}) => (
+  <button
+    className={button({ intent, size, disabled, className })}
+    disabled={disabled || undefined}
+    {...props}
+  />
+);
+```
+
+<Note>
+  The `ButtonProps` interface uses `Omit` to remove the native `disabled` attribute and replace it with CVA's typed variant. This lets CVA control the disabled styling while still forwarding the boolean to the DOM.
+</Note>
+
+### Usage
+
+```tsx app.tsx
+import { Button } from "./components";
+
+// Uses defaultVariants (primary, medium, enabled)
+<Button>Click me</Button>
+
+// Explicit variants
+<Button intent="secondary" size="small">Cancel</Button>
+
+// Disabled variant
+<Button disabled>Unavailable</Button>
+
+// Extra className is merged in
+<Button className="my-4">With extra class</Button>
+```
+
+## With CSS Modules
+
+CVA works equally well with CSS Modules — pass the imported class name references as variant values instead of utility strings.
+
+### CSS Module
+
+```css button.module.css
+.base {
+  display: inline-flex;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.primary {
+  color: rgb(255 255 255);
+  background-color: rgb(59 130 246);
+  border: transparent;
+}
+
+.primary.enabled:hover {
+  background-color: rgb(37 99 235);
+}
+
+.secondary {
+  background-color: rgb(255 255 255);
+  color: rgb(31 41 55);
+  border-color: rgb(156 163 175);
+}
+
+.secondary.enabled:hover {
+  background-color: rgb(243 244 246);
+}
+
+.small {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.medium {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  padding: 0.5rem 1rem;
+}
+
+.primaryMedium {
+  text-transform: uppercase;
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+```
+
+### Component
+
+```tsx button.tsx
+import React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+
+import styles from "./button.module.css";
+
+const button = cva(styles.base, {
+  variants: {
+    intent: {
+      primary: styles.primary,
+      secondary: styles.secondary,
+    },
+    size: {
+      small: styles.small,
+      medium: styles.medium,
+    },
+    disabled: {
+      false: styles.enabled,
+      true: styles.disabled,
+    },
+  },
+  compoundVariants: [
+    { intent: "primary", size: "medium", className: styles.primaryMedium },
+  ],
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+    disabled: false,
+  },
+});
+
+export interface ButtonProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "disabled">,
+    VariantProps<typeof button> {}
+
+export const Button: React.FC<ButtonProps> = ({
+  className,
+  intent,
+  size,
+  disabled,
+  ...props
+}) => (
+  <button
+    className={button({ intent, size, disabled, className })}
+    disabled={disabled || undefined}
+    {...props}
+  />
+);
+```
+
+<Tip>
+  Both `class` and `className` are accepted by CVA's compound variants config. Use whichever matches your codebase convention — CVA handles both.
+</Tip>
+
+## `class` vs `className`
+
+When calling a CVA function, you can pass either `class` or `className` to append additional classes at the call site. Both are supported:
+
+```tsx
+button({ intent: "primary", className: "my-custom-class" });
+// or
+button({ intent: "primary", class: "my-custom-class" });
+```
+
+This is particularly useful when building wrapper components that accept a `className` prop from the consumer.

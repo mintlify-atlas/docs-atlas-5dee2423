@@ -1,0 +1,143 @@
+---
+title: "Installation"
+description: "Install Class Variance Authority and configure it for your project, including optional Tailwind CSS integration."
+---
+
+# Installation
+
+## Install the package
+
+<CodeGroup>
+
+```bash npm
+npm i class-variance-authority
+```
+
+```bash yarn
+yarn add class-variance-authority
+```
+
+```bash pnpm
+pnpm i class-variance-authority
+```
+
+```bash bun
+bun add class-variance-authority
+```
+
+</CodeGroup>
+
+## Aliasing as `cva`
+
+Originally, the plan was to publish the package under the shorter name `cva`, but that name was taken and marked as a placeholder on npm. On 2022/02/16, GitHub transferred npm ownership of `cva` to [Joe Bell](https://joebell.studio). The shorter name will become the primary package name from v1 onwards.
+
+In the meantime, you can alias `class-variance-authority` as `cva` so your imports use the shorter name today.
+
+**Step 1.** Install with an alias using [`npm install`](https://docs.npmjs.com/cli/v6/commands/npm-install):
+
+```bash
+npm i cva@npm:class-variance-authority
+```
+
+**Step 2.** Import from the alias:
+
+```ts
+import { cva } from "cva";
+```
+
+## Tailwind CSS
+
+If you use Tailwind CSS, the following optional steps improve your development experience.
+
+### IntelliSense
+
+Enable Tailwind CSS class autocompletion inside `cva` and `cx` calls by adding `cva` and `cx` to your editor's list of class functions.
+
+<Tabs>
+  <Tab title="VS Code">
+    1. [Install the Tailwind CSS IntelliSense extension](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss)
+
+    2. Add the following to your [`settings.json`](https://code.visualstudio.com/docs/getstarted/settings):
+
+    ```json
+    {
+      "tailwindCSS.classFunctions": ["cva", "cx"]
+    }
+    ```
+  </Tab>
+  <Tab title="Zed">
+    Add the following to your [`.zed/settings.json`](https://zed.dev/docs/configuring-zed#settings-files):
+
+    ```json
+    {
+      "lsp": {
+        "tailwindcss-language-server": {
+          "settings": {
+            "classFunctions": ["cva", "cx"]
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Neovim">
+    1. [Install the tailwindcss LSP config](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#tailwindcss)
+
+    2. Add the following configuration:
+
+    ```lua
+    require 'lspconfig'.tailwindcss.setup({
+      settings = {
+        tailwindCSS = {
+          classFunctions = { "cva", "cx" },
+        },
+      },
+    })
+    ```
+  </Tab>
+  <Tab title="WebStorm">
+    1. Available for [WebStorm 2023.1](https://www.jetbrains.com/webstorm/whatsnew/#version-2023-1-tailwind-css-configuration) and later.
+
+    2. Open settings and go to [Languages and Frameworks | Style Sheets | Tailwind CSS](https://www.jetbrains.com/help/webstorm/tailwind-css.html#ws_css_tailwind_configuration).
+
+    3. Add the following to your Tailwind configuration:
+
+    ```json
+    {
+      "classFunctions": ["cva", "cx"]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Handling style conflicts
+
+Although `cva`'s API is designed to help you avoid styling conflicts, there is still a small margin of error. If you want to eliminate that risk entirely, use [`tailwind-merge`](https://github.com/dcastil/tailwind-merge) to deduplicate and resolve conflicting Tailwind classes.
+
+Wrap your `cva` component call with `twMerge` for bulletproof output:
+
+```ts
+import { cva, type VariantProps } from "class-variance-authority";
+import { twMerge } from "tailwind-merge";
+
+const buttonVariants = cva(["your", "base", "classes"], {
+  variants: {
+    intent: {
+      primary: ["your", "primary", "classes"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+  },
+});
+
+export interface ButtonVariants extends VariantProps<typeof buttonVariants> {}
+
+export const button = (variants: ButtonVariants) =>
+  twMerge(buttonVariants(variants));
+```
+
+<Tip>
+  `tailwind-merge` is a separate package and must be installed independently:
+  `npm i tailwind-merge`
+</Tip>

@@ -1,0 +1,132 @@
+---
+title: "Compound Variants"
+description: "Apply classes only when multiple variant conditions are met simultaneously."
+---
+
+# Compound variants
+
+Compound variants let you apply extra classes only when a specific combination of variant values is active. They live in the `compoundVariants` array and are evaluated after all individual variant classes are resolved.
+
+## Basic usage
+
+Each entry in `compoundVariants` is an object that specifies which variant values must match, plus the `class` (or `className`) to apply when all conditions are met:
+
+```ts components/button.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+  compoundVariants: [
+    // Applied only when intent="primary" AND size="medium"
+    {
+      intent: "primary",
+      size: "medium",
+      class: "uppercase",
+    },
+  ],
+});
+
+button({ intent: "primary", size: "medium" });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 uppercase"
+
+button({ intent: "primary", size: "small" });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-sm py-1 px-2"
+// Note: "uppercase" is NOT included — size is "small", not "medium"
+```
+
+## Using compound variants with boolean variants
+
+Compound variants work with boolean variants too. The following example applies a hover class only when the button is not disabled:
+
+```ts components/button.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+    disabled: {
+      false: null,
+      true: ["opacity-50", "cursor-not-allowed"],
+    },
+  },
+  compoundVariants: [
+    {
+      intent: "primary",
+      disabled: false,
+      class: "hover:bg-blue-600",
+    },
+    {
+      intent: "secondary",
+      disabled: false,
+      class: "hover:bg-gray-100",
+    },
+    {
+      intent: "primary",
+      size: "medium",
+      class: "uppercase",
+    },
+  ],
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+    disabled: false,
+  },
+});
+
+button();
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 hover:bg-blue-600 uppercase"
+
+button({ disabled: true });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 opacity-50 cursor-not-allowed uppercase"
+// Note: "hover:bg-blue-600" is NOT included — disabled is true
+
+button({ intent: "secondary", size: "small" });
+// => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2 hover:bg-gray-100"
+```
+
+## Targeting multiple values
+
+You can pass an array of values to a compound variant condition. The compound variant will match if the current prop value is any item in that array:
+
+```ts components/button.ts
+import { cva } from "class-variance-authority";
+
+const button = cva("…", {
+  variants: {
+    intent: { primary: "…", secondary: "…" },
+    size: { small: "…", medium: "…" },
+  },
+  compoundVariants: [
+    // Applied when intent="primary" OR intent="secondary", AND size="medium"
+    {
+      intent: ["primary", "secondary"],
+      size: "medium",
+      class: "uppercase",
+    },
+  ],
+});
+
+button({ intent: "primary", size: "medium" });   // includes "uppercase"
+button({ intent: "secondary", size: "medium" });  // includes "uppercase"
+button({ intent: "primary", size: "small" });    // does NOT include "uppercase"
+```
+
+<Tip>
+  Array targeting is a clean alternative to writing duplicate compound variant entries — use it whenever two or more variant values should produce the same extra class.
+</Tip>

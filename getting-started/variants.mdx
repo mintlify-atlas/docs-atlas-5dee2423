@@ -1,0 +1,117 @@
+---
+title: "Variants"
+description: "Define named groups of CSS classes activated by props to build consistent, type-safe UI components."
+---
+
+# Variants
+
+<Info>
+  CVA is best used in SSR/SSG environments. Because `cva` returns a plain string, your users don't need any of this JavaScript at runtime — it can all be resolved at build time or on the server.
+</Info>
+
+Variants are named groups of CSS classes that are applied based on the props you pass to a component. Instead of writing conditional class logic by hand, you declare all possible visual states in one place and CVA resolves the correct string for you.
+
+## Creating a component with variants
+
+Pass base classes as the first argument to `cva`, then describe each variant group inside the `variants` key.
+
+```ts components/button.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+});
+```
+
+<Note>
+  Tailwind CSS is optional. CVA works with any class-based styling approach, including plain CSS class names and CSS Modules.
+</Note>
+
+Call the component with different prop combinations to get the resolved class string:
+
+```ts
+button({ intent: "primary", size: "medium" });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4"
+
+button({ intent: "secondary", size: "small" });
+// => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2"
+```
+
+You can also pass classes as arrays or space-separated strings — both produce identical output:
+
+```ts components/button.ts
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      // Array syntax
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      // String syntax — equivalent
+      secondary: "bg-white text-gray-800 border-gray-400",
+    },
+  },
+});
+```
+
+## Boolean variants
+
+Variant keys can be the string `"true"` or `"false"`, and CVA will accept an actual `boolean` value for that prop. This is useful for representing toggled states like `disabled`, `loading`, or `active`.
+
+Set the `false` value to `null` when you don't need extra classes for the off state:
+
+```ts components/button.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+    // Boolean variant: `true` adds classes, `false` adds nothing
+    disabled: {
+      false: null,
+      true: ["opacity-50", "cursor-not-allowed"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+    disabled: false,
+  },
+});
+
+button();
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4"
+
+button({ disabled: true });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 opacity-50 cursor-not-allowed"
+```
+
+## Extending a component
+
+Every CVA component accepts an optional `class` or `className` prop for one-off overrides. The extra classes are appended after all variant classes.
+
+```ts
+button({ intent: "primary", class: "m-4" });
+// => "…buttonClasses m-4"
+
+button({ intent: "primary", className: "m-4" });
+// => "…buttonClasses m-4"
+```
+
+<Note>
+  You can pass `class` **or** `className`, but not both at the same time. The two props are mutually exclusive in CVA's type system.
+</Note>

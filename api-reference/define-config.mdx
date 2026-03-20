@@ -1,0 +1,115 @@
+---
+title: "defineConfig"
+description: "Create a custom cva, cx, and compose bound to a shared configuration."
+---
+
+# defineConfig
+
+`defineConfig` creates a custom set of `cva`, `cx`, and `compose` functions bound to a shared configuration. The primary use case is attaching an `onComplete` hook — most commonly to pipe the final class string through `tailwind-merge`.
+
+## Signature
+
+```ts
+import { defineConfig } from "cva";
+
+interface DefineConfig {
+  (options?: DefineConfigOptions): {
+    compose: Compose;
+    cx: CX;
+    cva: CVA;
+  };
+}
+
+interface DefineConfigOptions {
+  hooks?: {
+    /** Returns the completed string of concatenated classes/classNames. */
+    onComplete?: (className: string) => string;
+    /**
+     * @deprecated Use `onComplete` instead.
+     */
+    "cx:done"?: (className: string) => string;
+  };
+}
+```
+
+## Parameters
+
+<ParamField body="options" type="DefineConfigOptions">
+  Optional configuration object.
+
+  <Expandable title="options">
+    <ParamField body="hooks" type="object">
+      Lifecycle hooks.
+
+      <Expandable title="hooks">
+        <ParamField body="onComplete" type="(className: string) => string">
+          Called with the fully concatenated class string after every `cva`, `cx`, or `compose` call. The return value replaces the class string.
+
+          This is the recommended hook for integrating `tailwind-merge` or any other post-processing step.
+        </ParamField>
+
+        <ParamField body="cx:done" type="(className: string) => string" deprecated>
+          Deprecated alias for `onComplete`. Use `onComplete` instead.
+
+          <Warning>
+            `cx:done` is deprecated and may be removed in a future release. Migrate to `onComplete`.
+          </Warning>
+        </ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Return value
+
+<ResponseField name="cva" type="CVA">
+  A `cva` function bound to the provided config. Equivalent to the named export from `cva`, but runs every resolved class string through the `onComplete` hook.
+</ResponseField>
+
+<ResponseField name="cx" type="CX">
+  A `cx` function bound to the provided config. Equivalent to `clsx`, but runs its output through the `onComplete` hook.
+</ResponseField>
+
+<ResponseField name="compose" type="Compose">
+  A `compose` function bound to the provided config. Equivalent to the named export from `cva`, but runs the final concatenated string through the `onComplete` hook.
+</ResponseField>
+
+## Tailwind-merge integration
+
+The recommended pattern is to call `defineConfig` once in a shared utility module and re-export the results. All components that import from that module get `tailwind-merge` conflict resolution for free.
+
+```ts lib/utils.ts
+import { defineConfig } from "cva";
+import { twMerge } from "tailwind-merge";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => twMerge(className),
+  },
+});
+```
+
+Then import from your local module instead of from `cva` directly:
+
+```ts components/button.ts
+import { cva, type VariantProps } from "../lib/utils";
+
+const button = cva({
+  base: ["font-semibold", "border", "rounded"],
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+  },
+  defaultVariants: { intent: "primary" },
+});
+
+export type ButtonProps = VariantProps<typeof button>;
+```
+
+Because `defineConfig` wires the hook into `cx` and `compose` as well, all three functions benefit from conflict resolution without any additional setup.
+
+<Tip>
+  For a full walkthrough of Tailwind CSS setup — including IntelliSense and the Prettier plugin — see the [Tailwind CSS guide](/guides/tailwind-css).
+</Tip>

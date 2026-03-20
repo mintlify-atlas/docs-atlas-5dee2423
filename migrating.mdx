@@ -1,0 +1,192 @@
+---
+title: "Migrating"
+description: "Upgrade from the legacy class-variance-authority package to the cva package (v1+)."
+---
+
+# Migrating
+
+The `cva` package (v1+) is the successor to `class-variance-authority` (v0.x). It ships new features — `compose` and `defineConfig` — and changes the `cva()` call signature from positional arguments to a config object.
+
+## Package rename
+
+<Warning>
+  The `class-variance-authority` package is no longer receiving new features. Migrate to `cva` to access `compose`, `defineConfig`, and future releases.
+</Warning>
+
+<Steps>
+  <Step title="Uninstall the legacy package">
+    <CodeGroup>
+
+    ```bash npm
+    npm uninstall class-variance-authority
+    ```
+
+    ```bash yarn
+    yarn remove class-variance-authority
+    ```
+
+    ```bash pnpm
+    pnpm remove class-variance-authority
+    ```
+
+    ```bash bun
+    bun remove class-variance-authority
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Install the new package">
+    <CodeGroup>
+
+    ```bash npm
+    npm install cva
+    ```
+
+    ```bash yarn
+    yarn add cva
+    ```
+
+    ```bash pnpm
+    pnpm add cva
+    ```
+
+    ```bash bun
+    bun add cva
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Update imports">
+    Replace all imports from `class-variance-authority` with `cva`.
+
+    ```diff
+    -import { cva, cx, type VariantProps } from "class-variance-authority";
+    +import { cva, cx, type VariantProps } from "cva";
+    ```
+  </Step>
+
+  <Step title="Update cva() call signatures">
+    The legacy package accepted two positional arguments: `cva(base, options)`. The new package accepts a single config object: `cva({ base, variants, compoundVariants, defaultVariants })`.
+
+    <Warning>
+      This is a breaking change. Every `cva()` call must be updated.
+    </Warning>
+
+    **Before (class-variance-authority v0.x)**
+
+    ```ts
+    const button = cva(["font-semibold", "border", "rounded"], {
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          sm: ["text-sm", "py-1", "px-2"],
+          md: ["text-base", "py-2", "px-4"],
+        },
+      },
+      compoundVariants: [
+        { intent: "primary", size: "md", class: "uppercase" },
+      ],
+      defaultVariants: {
+        intent: "primary",
+        size: "md",
+      },
+    });
+    ```
+
+    **After (cva v1+)**
+
+    ```ts
+    const button = cva({
+      base: ["font-semibold", "border", "rounded"],
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          sm: ["text-sm", "py-1", "px-2"],
+          md: ["text-base", "py-2", "px-4"],
+        },
+      },
+      compoundVariants: [
+        { intent: "primary", size: "md", class: "uppercase" },
+      ],
+      defaultVariants: {
+        intent: "primary",
+        size: "md",
+      },
+    });
+    ```
+
+    The diff in one place:
+
+    ```diff
+    -const button = cva(["font-semibold", "border", "rounded"], {
+    -  variants: { … },
+    -  compoundVariants: [ … ],
+    -  defaultVariants: { … },
+    -});
+    +const button = cva({
+    +  base: ["font-semibold", "border", "rounded"],
+    +  variants: { … },
+    +  compoundVariants: [ … ],
+    +  defaultVariants: { … },
+    +});
+    ```
+  </Step>
+</Steps>
+
+## New features in cva v1+
+
+### `compose`
+
+`compose` is a new helper that merges multiple CVA components into one. It is not available in `class-variance-authority`.
+
+```ts
+import { cva, compose } from "cva";
+
+const box = cva({
+  base: "box box-border",
+  variants: {
+    margin: { 0: "m-0", 4: "m-4" },
+    padding: { 0: "p-0", 4: "p-4" },
+  },
+  defaultVariants: { margin: 0, padding: 0 },
+});
+
+const card = cva({
+  base: "card border-solid border-slate-300 rounded",
+  variants: {
+    shadow: { md: "drop-shadow-md", lg: "drop-shadow-lg" },
+  },
+});
+
+const cardBox = compose(box, card);
+
+cardBox({ margin: 4, padding: 4, shadow: "md" });
+// => "box box-border m-4 p-4 card border-solid border-slate-300 rounded drop-shadow-md"
+```
+
+See the [`compose` API reference](/api-reference/compose) for full documentation.
+
+### `defineConfig`
+
+`defineConfig` lets you configure a custom `onComplete` hook that runs after every class concatenation — the primary use case is integrating `tailwind-merge` globally:
+
+```ts lib/utils.ts
+import { defineConfig } from "cva";
+import { twMerge } from "tailwind-merge";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => twMerge(className),
+  },
+});
+```
+
+See the [`defineConfig` API reference](/api-reference/define-config) for full documentation.

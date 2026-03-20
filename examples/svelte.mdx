@@ -1,0 +1,150 @@
+---
+title: "Svelte"
+description: "Use CVA in Svelte components with scoped styles and TypeScript-typed props."
+---
+
+CVA integrates with Svelte's component model. Define your CVA function in the `<script>` block and pass its output to the `class` attribute. Use `$$props.class` to forward any extra classes passed by the consumer.
+
+## Installation
+
+```bash
+npm install class-variance-authority
+```
+
+## Button component
+
+A complete Svelte button component using CVA with scoped CSS:
+
+```svelte button.svelte
+<script lang="ts">
+  import type { HTMLButtonAttributes } from "svelte/elements";
+  import { cva, type VariantProps } from "class-variance-authority";
+
+  const button = cva("button", {
+    variants: {
+      intent: {
+        primary: "primary",
+        secondary: "secondary",
+      },
+      size: {
+        small: "small",
+        medium: "medium",
+      },
+      disabled: {
+        false: "enabled",
+        true: "disabled",
+      },
+    },
+    compoundVariants: [
+      { intent: "primary", size: "medium", class: "primaryMedium" },
+    ],
+  });
+
+  interface $$Props extends HTMLButtonAttributes, VariantProps<typeof button> {}
+
+  /**
+   * For Svelte components, we recommend setting your defaultVariants within
+   * Svelte props (which are `undefined` by default)
+   */
+  export let intent: $$Props["intent"] = "primary";
+  export let size: $$Props["size"] = "medium";
+  export let disabled: $$Props["disabled"] = false;
+</script>
+
+<button
+  {...$$props}
+  class={button({ intent, size, disabled, class: $$props.class })}
+  {disabled}
+>
+  <slot />
+</button>
+
+<style>
+  .button {
+    display: inline-flex;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .primary {
+    color: rgb(255 255 255);
+    background-color: rgb(59 130 246);
+    border: transparent;
+  }
+
+  .primary.enabled:hover {
+    background-color: rgb(37 99 235);
+  }
+
+  .secondary {
+    background-color: rgb(255 255 255);
+    color: rgb(31 41 55);
+    border-color: rgb(156 163 175);
+  }
+
+  .secondary.enabled:hover {
+    background-color: rgb(243 244 246);
+  }
+
+  .small {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .medium {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .primaryMedium {
+    text-transform: uppercase;
+  }
+
+  .disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+</style>
+```
+
+<Note>
+  In Svelte, set default variant values directly on the exported props rather than in `defaultVariants`. This follows Svelte's idiomatic prop pattern where exported props default to `undefined`.
+</Note>
+
+### Forwarding `class` from the consumer
+
+To support consumers passing extra classes via `class="..."`, use `$$props.class` when calling the CVA function:
+
+```svelte
+<button
+  {...$$props}
+  class={button({ intent, size, disabled, class: $$props.class })}
+  {disabled}
+>
+  <slot />
+</button>
+```
+
+Spreading `{...$$props}` first and then explicitly setting `class` ensures the CVA-generated class string takes precedence over the raw `class` prop in `$$props`.
+
+### Consuming the component
+
+```svelte App.svelte
+<script lang="ts">
+  import Button from "./components/button.svelte";
+</script>
+
+<!-- Uses prop defaults (primary, medium, enabled) -->
+<Button>Click me</Button>
+
+<!-- Explicit variants -->
+<Button intent="secondary" size="small">Cancel</Button>
+
+<!-- Disabled -->
+<Button disabled>Unavailable</Button>
+
+<!-- Extra class forwarded to CVA -->
+<Button class="mt-4">With extra class</Button>
+```

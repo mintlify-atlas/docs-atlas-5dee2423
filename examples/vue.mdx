@@ -1,0 +1,157 @@
+---
+title: "Vue"
+description: "Use CVA in Vue components with scoped styles and the :class binding."
+---
+
+CVA works with Vue's `<script setup>` syntax and the `:class` binding. Define your variant function in the script block and bind its output directly to the element's class.
+
+## Installation
+
+```bash
+npm install class-variance-authority
+```
+
+## The `:class` binding
+
+Vue's `:class` binding accepts strings, arrays, and objects. CVA returns a string, so you can bind it directly:
+
+```vue
+<button :class="button({ intent, size })">
+  ...
+</button>
+```
+
+## Button component
+
+A complete Vue button component using CVA with scoped CSS:
+
+```vue Button.vue
+<script setup lang="ts">
+import { cva, type VariantProps } from "class-variance-authority";
+
+const button = cva("button", {
+  variants: {
+    intent: {
+      primary: "primary",
+      secondary: "secondary",
+    },
+    size: {
+      small: "small",
+      medium: "medium",
+    },
+    disabled: {
+      true: "disabled",
+      false: "enabled",
+    },
+  },
+  compoundVariants: [
+    { intent: "primary", size: "medium", class: "primaryMedium" },
+  ],
+});
+
+type ButtonProps = VariantProps<typeof button>;
+
+withDefaults(
+  defineProps<{
+    intent: ButtonProps["intent"];
+    size: ButtonProps["size"];
+  }>(),
+  {
+    intent: "primary",
+    size: "medium",
+    // Within Vue, `disabled` is defined and included by default.
+    disabled: false,
+  },
+);
+</script>
+
+<template>
+  <button
+    :class="
+      button({
+        intent,
+        size,
+        // Within Vue, `boolean` attributes will be passed through if they have
+        // **truthy** values.
+        // https://vuejs.org/guide/essentials/template-syntax.html#boolean-attributes
+        disabled: typeof $attrs['disabled'] !== 'undefined',
+      })
+    "
+    :disabled="typeof $attrs['disabled'] !== 'undefined'"
+  >
+    <slot />
+  </button>
+</template>
+
+<style scoped>
+.button {
+  display: inline-flex;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.primary {
+  color: rgb(255 255 255);
+  background-color: rgb(59 130 246);
+  border: transparent;
+}
+
+.primary.enabled:hover {
+  background-color: rgb(37 99 235);
+}
+
+.secondary {
+  background-color: rgb(255 255 255);
+  color: rgb(31 41 55);
+  border-color: rgb(156 163 175);
+}
+
+.secondary.enabled:hover {
+  background-color: rgb(243 244 246);
+}
+
+.small {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.medium {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  padding: 0.5rem 1rem;
+}
+
+.disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.primaryMedium {
+  text-transform: uppercase;
+}
+</style>
+```
+
+<Note>
+  Vue handles the `disabled` attribute differently from React. Boolean attributes are passed through `$attrs` when they have truthy values, so the component checks `typeof $attrs['disabled'] !== 'undefined'` to detect the disabled state rather than reading it as a typed prop.
+</Note>
+
+### Consuming the component
+
+```vue App.vue
+<script setup lang="ts">
+import Button from "./components/Button.vue";
+</script>
+
+<template>
+  <!-- Uses prop defaults (primary, medium) -->
+  <Button>Click me</Button>
+
+  <!-- Explicit variants -->
+  <Button intent="secondary" size="small">Cancel</Button>
+
+  <!-- Disabled (passed as a boolean attribute) -->
+  <Button disabled>Unavailable</Button>
+</template>
+```

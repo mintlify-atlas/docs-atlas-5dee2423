@@ -1,0 +1,116 @@
+---
+title: "Composing Components"
+description: "Combine multiple CVA components into one using compose or manual cx composition."
+---
+
+# Composing components
+
+Sometimes a component is the sum of multiple independent variant sets. CVA provides two approaches for combining them: manual composition with `cx`, and the `compose` helper available in the `cva` package.
+
+## Manual composition with `cx`
+
+The most flexible approach is to call each CVA component separately and concatenate the results with `cx`. This keeps the variant definitions fully independent while letting you present a unified prop surface to consumers:
+
+```ts components/card.ts
+import type { VariantProps } from "class-variance-authority";
+import { cva, cx } from "class-variance-authority";
+
+/**
+ * Box
+ */
+export type BoxProps = VariantProps<typeof box>;
+export const box = cva(["box", "box-border"], {
+  variants: {
+    margin: { 0: "m-0", 2: "m-2", 4: "m-4", 8: "m-8" },
+    padding: { 0: "p-0", 2: "p-2", 4: "p-4", 8: "p-8" },
+  },
+  defaultVariants: {
+    margin: 0,
+    padding: 0,
+  },
+});
+
+/**
+ * Card
+ */
+type CardBaseProps = VariantProps<typeof cardBase>;
+const cardBase = cva(["card", "border-solid", "border-slate-300", "rounded"], {
+  variants: {
+    shadow: {
+      md: "drop-shadow-md",
+      lg: "drop-shadow-lg",
+      xl: "drop-shadow-xl",
+    },
+  },
+});
+
+export interface CardProps extends BoxProps, CardBaseProps {}
+export const card = ({ margin, padding, shadow }: CardProps = {}) =>
+  cx(box({ margin, padding }), cardBase({ shadow }));
+```
+
+The `card` function accepts props from both `box` and `cardBase`, calls each CVA component with its relevant props, and merges the results:
+
+```ts
+card({ margin: 4, padding: 2, shadow: "md" });
+// => "box box-border m-4 p-2 card border-solid border-slate-300 rounded drop-shadow-md"
+```
+
+## The `compose` helper
+
+The `cva` package (v1+) exports a `compose` function that merges CVA components automatically. Pass the components as arguments; the returned function accepts the union of all their variant props:
+
+```ts components/card.ts
+import { cva, compose } from "cva";
+import type { VariantProps } from "cva";
+
+const box = cva({
+  base: ["box", "box-border"],
+  variants: {
+    margin: { 0: "m-0", 2: "m-2", 4: "m-4", 8: "m-8" },
+    padding: { 0: "p-0", 2: "p-2", 4: "p-4", 8: "p-8" },
+  },
+  defaultVariants: {
+    margin: 0,
+    padding: 0,
+  },
+});
+
+const cardBase = cva({
+  base: ["card", "border-solid", "border-slate-300", "rounded"],
+  variants: {
+    shadow: {
+      md: "drop-shadow-md",
+      lg: "drop-shadow-lg",
+      xl: "drop-shadow-xl",
+    },
+  },
+});
+
+export const card = compose(box, cardBase);
+export type CardProps = VariantProps<typeof card>;
+
+card({ margin: 4, padding: 2, shadow: "md" });
+// => "box box-border m-4 p-2 card border-solid border-slate-300 rounded drop-shadow-md"
+```
+
+<Note>
+  `compose` is exported from the `cva` package. It is not available in the legacy `class-variance-authority` package.
+</Note>
+
+## When to use each approach
+
+<AccordionGroup>
+  <Accordion title="Use compose when…">
+    - You are on the `cva` package (v1+)
+    - The composed components have no overlapping variant keys
+    - You want the merged type to be inferred automatically
+    - You do not need to transform or filter props before passing them down
+  </Accordion>
+  <Accordion title="Use manual cx when…">
+    - You are on the legacy `class-variance-authority` package
+    - The components have overlapping variant keys that need to be split manually
+    - You need to pass different prop subsets to each component
+    - You want explicit control over how props are distributed
+  </Accordion>
+</AccordionGroup>

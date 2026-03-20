@@ -1,0 +1,171 @@
+---
+title: "Tailwind CSS"
+description: "Set up Tailwind CSS IntelliSense with CVA, handle style conflicts using tailwind-merge, and configure the Prettier plugin."
+---
+
+# Tailwind CSS
+
+CVA works great with Tailwind CSS, but does not require it. You can use CVA with any utility-class library, or none at all.
+
+If you are using Tailwind, the sections below walk through IntelliSense setup, conflict resolution, and the Prettier plugin.
+
+## IntelliSense
+
+Tailwind's language server supports a `classFunctions` option that enables autocompletion and hover previews inside any function you name — including `cva` and `cx`.
+
+<Tabs>
+  <Tab title="VS Code">
+    <Steps>
+      <Step title="Install the extension">
+        Install the [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) extension from the VS Code Marketplace.
+      </Step>
+      <Step title="Add classFunctions to settings.json">
+        Open your [`settings.json`](https://code.visualstudio.com/docs/getstarted/settings) and add:
+
+        ```json .vscode/settings.json
+        {
+          "tailwindCSS.classFunctions": ["cva", "cx"]
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Zed">
+    Add the following to your [`.zed/settings.json`](https://zed.dev/docs/configuring-zed#settings-files):
+
+    ```json .zed/settings.json
+    {
+      "lsp": {
+        "tailwindcss-language-server": {
+          "settings": {
+            "classFunctions": ["cva", "cx"]
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Neovim">
+    <Steps>
+      <Step title="Install the LSP config">
+        Install the [tailwindcss server configuration](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#tailwindcss) for `nvim-lspconfig`.
+      </Step>
+      <Step title="Add classFunctions to your setup call">
+        ```lua init.lua
+        require('lspconfig').tailwindcss.setup({
+          settings = {
+            tailwindCSS = {
+              classFunctions = { "cva", "cx" },
+            },
+          },
+        })
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="WebStorm">
+    <Steps>
+      <Step title="Check your version">
+        This feature is available in [WebStorm 2023.1](https://www.jetbrains.com/webstorm/whatsnew/#version-2023-1-tailwind-css-configuration) and later.
+      </Step>
+      <Step title="Open Tailwind CSS settings">
+        Go to **Languages and Frameworks | Style Sheets | Tailwind CSS**.
+      </Step>
+      <Step title="Add classFunctions">
+        Add the following to your Tailwind configuration in the settings panel:
+
+        ```json
+        {
+          "classFunctions": ["cva", "cx"]
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Handling style conflicts
+
+Tailwind applies styles based on the order classes appear in your stylesheet, not the order they appear in the `class` attribute. This means two conflicting utilities — for example `p-2` and `p-4` — will not resolve predictably when merged at runtime.
+
+CVA's variant API is designed to minimise these situations, but they can still occur when a consumer passes extra classes via the `class` or `className` prop.
+
+The [`tailwind-merge`](https://github.com/dcastil/tailwind-merge) package resolves these conflicts by keeping only the last conflicting utility in the string.
+
+### Global setup with `defineConfig`
+
+The cleanest approach is to configure `tailwind-merge` once using `defineConfig` and re-export the resulting `cva`, `cx`, and `compose` from a single module. Every component that imports from that module gets conflict resolution for free.
+
+```typescript lib/utils.ts
+import { defineConfig } from "cva";
+import { twMerge } from "tailwind-merge";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => twMerge(className),
+  },
+});
+```
+
+Then import from your local module instead of `cva` directly:
+
+```typescript components/button.ts
+import { cva, type VariantProps } from "../lib/utils";
+
+export const button = cva({
+  base: ["font-semibold", "border", "rounded"],
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+  },
+  defaultVariants: { intent: "primary" },
+});
+
+export type ButtonProps = VariantProps<typeof button>;
+```
+
+### Per-component setup
+
+If you prefer to apply `tailwind-merge` only to specific components, wrap the CVA call manually:
+
+```typescript components/button.ts
+import { cva, type VariantProps } from "class-variance-authority";
+import { twMerge } from "tailwind-merge";
+
+const buttonVariants = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+  },
+});
+
+export interface ButtonProps extends VariantProps<typeof buttonVariants> {}
+
+export const button = (variants: ButtonProps) =>
+  twMerge(buttonVariants(variants));
+```
+
+<Tip>
+  The global `defineConfig` approach is recommended for most projects. It keeps conflict resolution in one place and works transparently with `cx` and `compose` as well.
+</Tip>
+
+## Prettier plugin
+
+[`prettier-plugin-tailwindcss`](https://github.com/tailwindlabs/prettier-plugin-tailwindcss) automatically sorts Tailwind classes. It supports the same `classFunctions` option as the language server, so you can configure it to sort classes inside `cva` and `cx` calls:
+
+```json .prettierrc
+{
+  "plugins": ["prettier-plugin-tailwindcss"],
+  "tailwindFunctions": ["cva", "cx"]
+}
+```
+
+<Note>
+  The Prettier plugin option is named `tailwindFunctions`, not `classFunctions`. Check the [plugin documentation](https://github.com/tailwindlabs/prettier-plugin-tailwindcss) for the current option name.
+</Note>

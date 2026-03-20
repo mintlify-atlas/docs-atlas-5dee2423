@@ -1,0 +1,103 @@
+---
+title: "compose"
+description: "Merge multiple CVA components into a single component function."
+---
+
+# compose
+
+`compose` takes any number of CVA component functions and returns a new component function whose variant props are the union of all the input components' variant props.
+
+<Note>
+  `compose` is available in the `cva` package (v1+). It is not exported from the legacy `class-variance-authority` package.
+</Note>
+
+## Signature
+
+```ts
+import { compose } from "cva";
+
+interface Compose {
+  <T extends ReturnType<CVA>[]>(
+    ...components: [...T]
+  ): (
+    props?: UnionToIntersection<
+      { [K in keyof T]: VariantProps<T[K]> }[number]
+    > & CVAClassProp,
+  ) => string;
+}
+```
+
+## Parameters
+
+<ParamField body="...components" type="ReturnType<CVA>[]">
+  One or more component functions returned by `cva`. There is no limit on the number of components you can compose.
+</ParamField>
+
+## Return value
+
+A new component function that:
+
+1. Accepts the **intersection** of all input components' variant props (every variant from every component is available as a top-level prop).
+2. Accepts an optional `class` or `className` prop that is applied to the final output.
+3. Returns a `string` of concatenated class names from all components.
+
+<Warning>
+  The `class` and `className` props on the **individual** components passed to `compose` are not forwarded. Only the `class` / `className` passed to the **composed** function itself are included in the output.
+</Warning>
+
+## Complete example
+
+```ts components/card.ts
+import { cva, compose, type VariantProps } from "cva";
+
+const box = cva({
+  base: ["box", "box-border"],
+  variants: {
+    margin: { 0: "m-0", 2: "m-2", 4: "m-4", 8: "m-8" },
+    padding: { 0: "p-0", 2: "p-2", 4: "p-4", 8: "p-8" },
+  },
+  defaultVariants: {
+    margin: 0,
+    padding: 0,
+  },
+});
+
+const cardBase = cva({
+  base: ["card", "border-solid", "border-slate-300", "rounded"],
+  variants: {
+    shadow: {
+      md: "drop-shadow-md",
+      lg: "drop-shadow-lg",
+      xl: "drop-shadow-xl",
+    },
+  },
+});
+
+export const card = compose(box, cardBase);
+export type CardProps = VariantProps<typeof card>;
+// => { margin?: 0 | 2 | 4 | 8; padding?: 0 | 2 | 4 | 8; shadow?: "md" | "lg" | "xl" }
+
+card({ margin: 4, padding: 2, shadow: "md" });
+// => "box box-border m-4 p-2 card border-solid border-slate-300 rounded drop-shadow-md"
+
+// Extra classes via className
+card({ shadow: "lg", className: "w-full" });
+// => "box box-border m-0 p-0 card border-solid border-slate-300 rounded drop-shadow-lg w-full"
+```
+
+## How class forwarding works
+
+`compose` strips `class` and `className` from the props before calling each individual component. The individual components therefore receive only their variant props. The top-level `class` / `className` is appended once, after all component outputs are concatenated.
+
+```ts
+import { cva, compose } from "cva";
+
+const a = cva({ base: "a" });
+const b = cva({ base: "b" });
+
+const ab = compose(a, b);
+
+// className is applied once to the composed output, not to a or b individually
+ab({ class: "extra" });
+// => "a b extra"
+```
